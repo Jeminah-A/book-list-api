@@ -1,61 +1,57 @@
-//book list in memory database
-let books = [];
-let idCounter = 1;
+const Book = require('../models/Book');
 
-// add a book (POST/books)
-function addBook(request, response) {
-  const { title, author, read } = request.body;
-  const book = { id: idCounter++, title, author, read };
-  books.push(book);
-  response.status(201).json(book);
+// Create
+async function addBook(req, res) {
+  try {
+    const book = new Book(req.body);
+    const savedBook = await book.save();
+    res.status(201).json(savedBook);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 }
 
-//Get all books 
-function getAllBooks(request, response) {
-  response.json(books);
+// Read all
+async function getAllBooks(req, res) {
+  const books = await Book.find();
+  res.json(books);
 }
 
-//Get a book by ID (GET /books/:id)
-function getBookById(request, response) {
-  const id = parseInt(request.params.id);
-  const book = books.find(b => b.id === id);
-  if (!book) return response.status(404).json({ message: 'Book not found' });
-  response.json(book);
+// Read one
+async function getBookById(req, res) {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (!book) return res.status(404).json({ message: 'Book not found' });
+    res.json(book);
+  } catch {
+    res.status(400).json({ message: 'Invalid ID' });
+  }
 }
 
-//Edit a book (PUT /books/:id)
-function updateBook(request, response) {
-  const id = parseInt(request.params.id);
-  const book = books.find(b => b.id === id);
-  if (!book) return response.status(404).json({ message: 'Book not found' });
-
-  const { title, author, read } = request.body;
-  if (title !== undefined) book.title = title;
-  if (author !== undefined) book.author = author;
-  if (read !== undefined) book.read = read;
-
-  response.json(book);
+// Update
+async function updateBook(req, res) {
+  try {
+    const book = await Book.findByIdAndUpdate(req.params.id, req.body, {
+      new: true, runValidators: true
+    });
+    if (!book) return res.status(404).json({ message: 'Book not found' });
+    res.json(book);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 }
 
-//  Test PUT http://localhost:3000/books/1 with JSON body like:
-
-// {
-//   "title": "Updated Title",
-//   "read": true
-// }
-
-
-// Delete book by ID (DELETE /books/:id)
-function deleteBook(request, response) {
-  const id = parseInt(request.params.id);
-  const index = books.findIndex(b => b.id === id);
-  if (index === -1) return response.status(404).json({ message: 'Book not found' });
-
-  const deleted = books.splice(index, 1);
-  response.json(deleted[0]);
+// Delete
+async function deleteBook(req, res) {
+  try {
+    const book = await Book.findByIdAndDelete(req.params.id);
+    if (!book) return res.status(404).json({ message: 'Book not found' });
+    res.json(book);
+  } catch {
+    res.status(400).json({ message: 'Invalid ID' });
+  }
 }
 
-// Export the functions
 module.exports = {
   addBook,
   getAllBooks,
